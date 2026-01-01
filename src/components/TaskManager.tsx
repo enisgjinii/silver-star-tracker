@@ -57,6 +57,7 @@ export function TaskManager() {
             case 'trello': return '📋'
             case 'github': return '🐙'
             case 'asana': return '⚪'
+            case 'todoist': return '✅'
             default: return '🔌'
         }
     }

@@ -1,6 +1,5 @@
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, Timer, BarChart2, CalendarDays, Database, Sparkles, Sun, Moon, Play, Pause, ChevronLeft, ChevronRight, CheckCircle2, Link } from "lucide-react"
-import { useTheme } from "@/hooks/use-theme"
+import { LayoutDashboard, Layout as LayoutIcon, Timer, BarChart2, CalendarDays, Database, Sparkles, Play, Pause, ChevronLeft, ChevronRight, CheckCircle2, Link, Settings } from "lucide-react"
 import { useState, useEffect } from "react"
 
 interface LayoutProps {
@@ -10,7 +9,6 @@ interface LayoutProps {
 }
 
 export function Layout({ children, currentView, onViewChange }: LayoutProps) {
-    const { theme, toggleTheme } = useTheme()
     const [isTracking, setIsTracking] = useState(true)
     const [isCollapsed, setIsCollapsed] = useState(false)
 
@@ -25,7 +23,8 @@ export function Layout({ children, currentView, onViewChange }: LayoutProps) {
     }
 
     const menuItems = [
-        { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+        { id: 'dashboard', icon: LayoutDashboard, label: 'Overview' },
+        { id: 'custom-dashboard', icon: LayoutIcon, label: 'My Dashboard' },
         { id: 'calendar', icon: CalendarDays, label: 'Calendar' },
         { id: 'focus', icon: Timer, label: 'Focus' },
         { id: 'stats', icon: BarChart2, label: 'Stats' },
@@ -165,15 +164,15 @@ export function Layout({ children, currentView, onViewChange }: LayoutProps) {
                     </button>
 
                     <button
-                        onClick={toggleTheme}
+                        onClick={() => onViewChange('settings')}
                         className={cn(
                             "w-full flex items-center px-3 py-2 text-sm font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-all",
                             isCollapsed ? "justify-center" : "gap-3"
                         )}
-                        title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+                        title="Theme Settings"
                     >
-                        {theme === 'light' ? <Moon className="h-4 w-4 flex-shrink-0" /> : <Sun className="h-4 w-4 flex-shrink-0" />}
-                        {!isCollapsed && <span>{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>}
+                        <Settings className="h-4 w-4 flex-shrink-0" />
+                        {!isCollapsed && <span>Settings</span>}
                     </button>
                 </div>
 

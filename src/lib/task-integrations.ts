@@ -4,7 +4,7 @@ export interface Task {
     id: string
     title: string
     status: 'todo' | 'in-progress' | 'done'
-    provider: 'jira' | 'trello' | 'asana' | 'github'
+    provider: 'jira' | 'trello' | 'asana' | 'github' | 'todoist'
     url?: string
     priority?: 'low' | 'medium' | 'high'
     assignee?: string
@@ -12,7 +12,7 @@ export interface Task {
 }
 
 export interface TaskProvider {
-    id: 'jira' | 'trello' | 'asana' | 'github'
+    id: 'jira' | 'trello' | 'asana' | 'github' | 'todoist'
     name: string
     icon: string
     isConnected: boolean
@@ -36,16 +36,21 @@ const MOCK_TASKS: Record<string, Task[]> = {
     ],
     asana: [
         { id: 'AS-12', title: 'Q1 Marketing Plan', status: 'todo', provider: 'asana', priority: 'high', url: '#' }
+    ],
+    todoist: [
+        { id: 'TD-1', title: 'Buy groceries', status: 'todo', provider: 'todoist', priority: 'medium', url: '#' },
+        { id: 'TD-2', title: 'Schedule dentist appt', status: 'done', provider: 'todoist', priority: 'low', url: '#' },
+        { id: 'TD-3', title: 'Finish Silver Star Project', status: 'in-progress', provider: 'todoist', priority: 'high', url: '#' }
     ]
 }
 
 export class SimulationTaskAdapter implements TaskProvider {
-    id: 'jira' | 'trello' | 'asana' | 'github'
+    id: 'jira' | 'trello' | 'asana' | 'github' | 'todoist'
     name: string
     icon: string; // We'll handle icons safely in UI
     isConnected: boolean = false
 
-    constructor(id: 'jira' | 'trello' | 'asana' | 'github', name: string) {
+    constructor(id: 'jira' | 'trello' | 'asana' | 'github' | 'todoist', name: string) {
         this.id = id
         this.name = name
         this.icon = ''
@@ -86,5 +91,6 @@ export const integrations = [
     new SimulationTaskAdapter('jira', 'Jira'),
     new SimulationTaskAdapter('trello', 'Trello'),
     new SimulationTaskAdapter('github', 'GitHub'),
-    new SimulationTaskAdapter('asana', 'Asana')
+    new SimulationTaskAdapter('asana', 'Asana'),
+    new SimulationTaskAdapter('todoist', 'Todoist')
 ]

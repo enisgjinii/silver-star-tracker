@@ -11,6 +11,7 @@ const getServiceConfig = (id: string) => {
         case 'trello': return { color: 'bg-[#0079BF]', icon: '📋' }
         case 'github': return { color: 'bg-[#24292e]', icon: '🐙' }
         case 'asana': return { color: 'bg-[#F06A6A]', icon: '⚪' } // Asana pinkish red
+        case 'todoist': return { color: 'bg-[#E44332]', icon: '✅' } // Todoist red
         default: return { color: 'bg-gray-500', icon: '🔌' }
     }
 }

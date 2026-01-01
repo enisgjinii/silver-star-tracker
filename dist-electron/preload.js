@@ -1,15 +1,1 @@
-"use strict";
-const electron = require("electron");
-electron.contextBridge.exposeInMainWorld("api", {
-  onActiveWindow: (callback) => {
-    electron.ipcRenderer.on("active-window", (_event, data) => callback(data));
-  },
-  getActivityData: () => electron.ipcRenderer.invoke("get-activity-data"),
-  getTodaySummary: () => electron.ipcRenderer.invoke("get-today-summary"),
-  getAppIcons: () => electron.ipcRenderer.invoke("get-app-icons"),
-  getDataPath: () => electron.ipcRenderer.invoke("get-data-path"),
-  deleteEntry: (id) => electron.ipcRenderer.invoke("delete-entry", id),
-  clearAllData: () => electron.ipcRenderer.invoke("clear-all-data"),
-  isTracking: () => electron.ipcRenderer.invoke("is-tracking"),
-  setTracking: (value) => electron.ipcRenderer.invoke("set-tracking", value)
-});
+"use strict";const e=require("electron");e.contextBridge.exposeInMainWorld("api",{onActiveWindow:t=>{e.ipcRenderer.on("active-window",(n,i)=>t(i))},getActivityData:()=>e.ipcRenderer.invoke("get-activity-data"),getTodaySummary:()=>e.ipcRenderer.invoke("get-today-summary"),getAppIcons:()=>e.ipcRenderer.invoke("get-app-icons"),getDataPath:()=>e.ipcRenderer.invoke("get-data-path"),deleteEntry:t=>e.ipcRenderer.invoke("delete-entry",t),clearAllData:()=>e.ipcRenderer.invoke("clear-all-data"),isTracking:()=>e.ipcRenderer.invoke("is-tracking"),setTracking:t=>e.ipcRenderer.invoke("set-tracking",t)});

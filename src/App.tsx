@@ -10,6 +10,8 @@ import { PrivacySettings } from "@/components/PrivacySettings"
 import { AICoach } from "@/components/AICoach"
 import { IntegrationsManager } from "@/components/IntegrationsManager"
 import { TaskManager } from "@/components/TaskManager"
+import { ThemeCustomizer } from "@/components/ThemeCustomizer"
+import { CustomDashboard } from "@/components/CustomDashboard"
 import './App.css'
 
 function App() {
@@ -33,11 +35,14 @@ function App() {
         return <IntegrationsManager />
       case 'achievements':
         return <Gamification />
-        return <Gamification />
+      case 'settings':
+        return <ThemeCustomizer />
       case 'privacy':
         return <PrivacySettings />
       case 'coach':
         return <AICoach />
+      case 'custom-dashboard':
+        return <CustomDashboard />
       default:
         return <Dashboard />
     }
