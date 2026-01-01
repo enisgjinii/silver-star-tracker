@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, Timer, BarChart2, CalendarDays, Database, Sparkles, Sun, Moon, Play, Pause } from "lucide-react"
+import { LayoutDashboard, Timer, BarChart2, CalendarDays, Database, Sparkles, Sun, Moon, Play, Pause, ChevronLeft, ChevronRight } from "lucide-react"
 import { useTheme } from "@/hooks/use-theme"
 import { useState, useEffect } from "react"
 
@@ -12,6 +12,7 @@ interface LayoutProps {
 export function Layout({ children, currentView, onViewChange }: LayoutProps) {
     const { theme, toggleTheme } = useTheme()
     const [isTracking, setIsTracking] = useState(true)
+    const [isCollapsed, setIsCollapsed] = useState(false)
 
     useEffect(() => {
         window.api?.isTracking().then(setIsTracking)
@@ -34,41 +35,58 @@ export function Layout({ children, currentView, onViewChange }: LayoutProps) {
     return (
         <div className="flex h-screen w-screen bg-background text-foreground overflow-hidden font-sans">
             {/* Sidebar */}
-            <div className="w-64 border-r border-border/40 bg-card/30 backdrop-blur-xl flex flex-col z-50 transition-all duration-300">
+            <div className={cn(
+                "border-r border-border/40 bg-card/30 backdrop-blur-xl flex flex-col z-50 transition-all duration-300 relative",
+                isCollapsed ? "w-20" : "w-64"
+            )}>
                 {/* Header */}
-                <div className="h-14 px-4 flex items-center border-b border-border/40 mb-2">
-                    <div className="flex items-center gap-2.5">
-                        <div className="h-6 w-6 rounded-md bg-primary flex items-center justify-center text-primary-foreground shadow-sm">
-                            <Sparkles className="h-3.5 w-3.5" />
+                <div className="h-14 px-4 flex items-center border-b border-border/40 mb-2 drag-region">
+                    <div className="flex items-center gap-3 w-full">
+                        <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center text-primary-foreground shadow-sm flex-shrink-0">
+                            <Sparkles className="h-4 w-4" />
                         </div>
-                        <div className="flex flex-col">
-                            <span className="text-sm font-semibold tracking-tight leading-none">Silver Star</span>
-                            <span className="text-[10px] text-muted-foreground font-medium">Enterprise Edition</span>
-                        </div>
+                        {!isCollapsed && (
+                            <div className="flex flex-col overflow-hidden">
+                                <span className="text-sm font-semibold tracking-tight leading-none truncate">Silver Star</span>
+                                <span className="text-[10px] text-muted-foreground font-medium truncate">Enterprise</span>
+                            </div>
+                        )}
                     </div>
                 </div>
 
+                {/* Collapse Toggle */}
+                <button
+                    onClick={() => setIsCollapsed(!isCollapsed)}
+                    className="absolute -right-3 top-16 h-6 w-6 bg-background border border-border rounded-full flex items-center justify-center shadow-sm hover:bg-muted transition-colors z-[60]"
+                >
+                    {isCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
+                </button>
+
                 {/* Nav Items */}
-                <div className="flex-1 px-3 py-2">
-                    <div className="mb-2 px-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                        Platform
-                    </div>
-                    <nav className="space-y-0.5">
+                <div className="flex-1 px-3 py-2 overflow-hidden">
+                    {!isCollapsed && (
+                        <div className="mb-2 px-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider animate-in fade-in duration-200">
+                            Platform
+                        </div>
+                    )}
+                    <nav className="space-y-1">
                         {menuItems.map((item) => (
                             <button
                                 key={item.id}
                                 onClick={() => onViewChange(item.id)}
                                 className={cn(
-                                    "w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 group",
+                                    "w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 group relative",
                                     currentView === item.id
                                         ? "bg-primary/10 text-primary shadow-sm"
-                                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                                    isCollapsed && "justify-center px-0"
                                 )}
+                                title={isCollapsed ? item.label : undefined}
                             >
-                                <item.icon className={cn("h-4 w-4", currentView === item.id ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
-                                <span>{item.label}</span>
+                                <item.icon className={cn("h-4 w-4 flex-shrink-0", currentView === item.id ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
+                                {!isCollapsed && <span className="truncate">{item.label}</span>}
                                 {currentView === item.id && (
-                                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />
+                                    <div className={cn("absolute bg-primary rounded-full", isCollapsed ? "bottom-1 w-1 h-1" : "right-3 w-1.5 h-1.5")} />
                                 )}
                             </button>
                         ))}
@@ -108,12 +126,14 @@ export function Layout({ children, currentView, onViewChange }: LayoutProps) {
 
                 {/* User Profile Stub */}
                 <div className="p-3 border-t border-border/40">
-                    <div className="flex items-center gap-3 px-2 py-1">
-                        <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 shadow-sm" />
-                        <div className="flex flex-col overflow-hidden">
-                            <span className="text-xs font-semibold truncate text-foreground">Admin User</span>
-                            <span className="text-[10px] text-muted-foreground truncate">admin@silverstar.ai</span>
-                        </div>
+                    <div className={cn("flex items-center gap-3 px-2 py-1", isCollapsed && "justify-center px-0")}>
+                        <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 shadow-sm flex-shrink-0" />
+                        {!isCollapsed && (
+                            <div className="flex flex-col overflow-hidden">
+                                <span className="text-xs font-semibold truncate text-foreground">Admin User</span>
+                                <span className="text-[10px] text-muted-foreground truncate">admin@silverstar.ai</span>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
