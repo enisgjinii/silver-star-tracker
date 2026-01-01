@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { Layout } from "@/components/Layout"
 import { Dashboard } from "@/components/Dashboard"
-import { FocusMode } from "@/components/FocusMode"
+import { PomodoroTimer } from "@/components/PomodoroTimer"
 import { Stats } from "@/components/Stats"
 import { CalendarView } from "@/components/CalendarView"
 import { DataManager } from "@/components/DataManager"
+import { Gamification } from "@/components/Gamification"
+import { PrivacySettings } from "@/components/PrivacySettings"
+import { AICoach } from "@/components/AICoach"
 import './App.css'
 
 function App() {
@@ -17,11 +20,17 @@ function App() {
       case 'calendar':
         return <CalendarView />
       case 'focus':
-        return <FocusMode />
+        return <PomodoroTimer />
       case 'stats':
         return <Stats />
       case 'data':
         return <DataManager />
+      case 'achievements':
+        return <Gamification />
+      case 'privacy':
+        return <PrivacySettings />
+      case 'coach':
+        return <AICoach />
       default:
         return <Dashboard />
     }

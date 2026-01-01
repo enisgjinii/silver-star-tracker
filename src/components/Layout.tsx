@@ -32,6 +32,12 @@ export function Layout({ children, currentView, onViewChange }: LayoutProps) {
         { id: 'data', icon: Database, label: 'Data' },
     ]
 
+    const premiumItems = [
+        { id: 'achievements', icon: Sparkles, label: 'Achievements' },
+        { id: 'coach', icon: LayoutDashboard, label: 'AI Coach' },
+    ]
+
+
     return (
         <div className="flex h-screen w-screen bg-background text-foreground overflow-hidden font-sans">
             {/* Sidebar */}
@@ -68,7 +74,7 @@ export function Layout({ children, currentView, onViewChange }: LayoutProps) {
                 </button>
 
                 {/* Nav Items */}
-                <div className="flex-1 px-3 py-2 overflow-hidden">
+                <div className="flex-1 px-3 py-2 overflow-y-auto">
                     {!isCollapsed && (
                         <div className="mb-2 px-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider animate-in fade-in duration-200">
                             Platform
@@ -96,38 +102,79 @@ export function Layout({ children, currentView, onViewChange }: LayoutProps) {
                             </button>
                         ))}
                     </nav>
+
+                    {/* Premium Section */}
+                    {!isCollapsed && (
+                        <div className="mt-4 mb-2 px-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider animate-in fade-in duration-200">
+                            Premium
+                        </div>
+                    )}
+                    <nav className="space-y-1 mt-1">
+                        {premiumItems.map((item) => (
+                            <button
+                                key={item.id}
+                                onClick={() => onViewChange(item.id)}
+                                className={cn(
+                                    "w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 group relative",
+                                    currentView === item.id
+                                        ? "bg-primary/10 text-primary shadow-sm"
+                                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                                    isCollapsed && "justify-center px-0"
+                                )}
+                                title={isCollapsed ? item.label : undefined}
+                            >
+                                <item.icon className={cn("h-4 w-4 flex-shrink-0", currentView === item.id ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
+                                {!isCollapsed && <span className="truncate">{item.label}</span>}
+                                {currentView === item.id && (
+                                    <div className={cn("absolute bg-primary rounded-full", isCollapsed ? "bottom-1 w-1 h-1" : "right-3 w-1.5 h-1.5")} />
+                                )}
+                            </button>
+                        ))}
+                    </nav>
                 </div>
+
 
                 {/* Bottom Actions */}
                 <div className="p-3 border-t border-border/40 space-y-2">
-                    <div className="mb-2 px-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                        Controls
-                    </div>
+                    {!isCollapsed && (
+                        <div className="mb-2 px-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                            Controls
+                        </div>
+                    )}
 
                     <button
                         onClick={toggleTracking}
                         className={cn(
-                            "w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md transition-all border border-transparent",
+                            "w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all border border-transparent",
                             isTracking
                                 ? "bg-green-500/5 text-green-700 hover:bg-green-500/10 border-green-500/10"
-                                : "bg-red-500/5 text-red-700 hover:bg-red-500/10 border-red-500/10"
+                                : "bg-red-500/5 text-red-700 hover:bg-red-500/10 border-red-500/10",
+                            isCollapsed ? "justify-center" : "justify-between"
                         )}
+                        title={isTracking ? 'Tracking Active' : 'Tracking Paused'}
                     >
-                        <div className="flex items-center gap-3">
-                            {isTracking ? <Play className="h-4 w-4 fill-current" /> : <Pause className="h-4 w-4 fill-current" />}
-                            <span>{isTracking ? 'Tracking Active' : 'Tracking Paused'}</span>
+                        <div className={cn("flex items-center gap-3", isCollapsed && "justify-center")}>
+                            {isTracking ? <Play className="h-4 w-4 fill-current flex-shrink-0" /> : <Pause className="h-4 w-4 fill-current flex-shrink-0" />}
+                            {!isCollapsed && <span>{isTracking ? 'Tracking Active' : 'Tracking Paused'}</span>}
                         </div>
-                        <div className={cn("w-2 h-2 rounded-full animate-pulse", isTracking ? "bg-green-500" : "bg-red-500")} />
+                        {!isCollapsed && (
+                            <div className={cn("w-2 h-2 rounded-full animate-pulse", isTracking ? "bg-green-500" : "bg-red-500")} />
+                        )}
                     </button>
 
                     <button
                         onClick={toggleTheme}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+                        className={cn(
+                            "w-full flex items-center px-3 py-2 text-sm font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-all",
+                            isCollapsed ? "justify-center" : "gap-3"
+                        )}
+                        title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
                     >
-                        {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-                        <span>{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>
+                        {theme === 'light' ? <Moon className="h-4 w-4 flex-shrink-0" /> : <Sun className="h-4 w-4 flex-shrink-0" />}
+                        {!isCollapsed && <span>{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>}
                     </button>
                 </div>
+
 
                 {/* User Profile Stub */}
                 <div className="p-3 border-t border-border/40">

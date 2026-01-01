@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { getAppIcon, formatDuration } from "@/lib/app-icons"
-import type { ActivityData } from "@/vite-env"
+import type { ActivityData } from "@/types/activity"
 import { Trash2, Database, FolderOpen, AlertTriangle } from "lucide-react"
 
 export function DataManager() {

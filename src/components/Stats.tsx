@@ -14,6 +14,7 @@ import { AppIcon } from "./ui/AppIcon"
 import { cn } from "@/lib/utils"
 import { jsPDF } from "jspdf"
 import { AnalyticsEngine } from "@/lib/analytics-engine"
+import { ActivityHeatmap } from "@/components/ActivityHeatmap"
 
 type TimeRange = '7d' | '30d' | 'all'
 
@@ -396,6 +397,9 @@ export function Stats() {
                     ))}
                 </div>
             </div>
+
+            {/* Activity Heatmap */}
+            <ActivityHeatmap data={analytics.heatmap} className="shadow-sm" />
         </div>
     )
 }
