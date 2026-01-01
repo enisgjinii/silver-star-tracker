@@ -40,8 +40,13 @@ export function Layout({ children, currentView, onViewChange }: LayoutProps) {
                 isCollapsed ? "w-20" : "w-64"
             )}>
                 {/* Header */}
-                <div className="h-14 px-4 flex items-center border-b border-border/40 mb-2 drag-region">
-                    <div className="flex items-center gap-3 w-full">
+                {/* Header */}
+                <div className={cn(
+                    "h-14 flex items-center border-b border-border/40 mb-2 drag-region transition-all duration-300",
+                    // Add padding for macOS traffic lights when not collapsed, otherwise center the logo
+                    isCollapsed ? "justify-center px-0" : "pl-20 pr-4"
+                )}>
+                    <div className={cn("flex items-center gap-3", !isCollapsed && "w-full")}>
                         <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center text-primary-foreground shadow-sm flex-shrink-0">
                             <Sparkles className="h-4 w-4" />
                         </div>
