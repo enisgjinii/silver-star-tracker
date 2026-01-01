@@ -11,10 +11,9 @@ export function TaskManager() {
     const [filterProvider, setFilterProvider] = useState<string>('all')
     const [activeProviders, setActiveProviders] = useState<string[]>([])
     const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
-        done: true // Collapse 'Done' by default
+        done: true
     })
 
-    // Load tasks from all connected adapters
     const loadTasks = async () => {
         setIsLoading(true)
         try {
@@ -42,6 +41,21 @@ export function TaskManager() {
         loadTasks()
     }, [])
 
+    const handleComplete = async (taskId: string, providerId: string) => {
+        // Optimistic update
+        const originalTasks = [...tasks]
+        setTasks(prev => prev.filter(t => t.id !== taskId))
+
+        const adapter = integrations.find(i => i.id === providerId)
+        if (adapter && adapter.completeTask) {
+            const success = await adapter.completeTask(taskId)
+            if (!success) {
+                setTasks(originalTasks)
+                console.error("Failed to complete task")
+            }
+        }
+    }
+
     const toggleSection = (section: string) => {
         setCollapsedSections(prev => ({ ...prev, [section]: !prev[section] }))
     }
@@ -51,7 +65,6 @@ export function TaskManager() {
         return true
     })
 
-    // Grouping
     const groupedTasks = {
         active: filteredTasks.filter(t => t.status !== 'done'),
         done: filteredTasks.filter(t => t.status === 'done')
@@ -86,7 +99,7 @@ export function TaskManager() {
                     </div>
                     <h2 className="text-2xl font-bold">No Integrations Connected</h2>
                     <p className="text-muted-foreground">
-                        Connect services like Jira, Trello, or Todoist to see your tasks here.
+                        Connect services like Todoist to see your tasks here.
                     </p>
                     <Button onClick={() => window.location.hash = 'integrations'}>
                         Go to Integrations
@@ -148,6 +161,7 @@ export function TaskManager() {
                                     task={task}
                                     getProviderIcon={getProviderIcon}
                                     getPriorityColor={getPriorityColor}
+                                    onComplete={() => handleComplete(task.id, task.provider)}
                                 />
                             ))
                         )}
@@ -185,16 +199,21 @@ export function TaskManager() {
     )
 }
 
-function TaskRow({ task, getProviderIcon, getPriorityColor, isDone = false }: { task: Task, getProviderIcon: any, getPriorityColor: any, isDone?: boolean }) {
+function TaskRow({ task, getProviderIcon, getPriorityColor, isDone = false, onComplete }: { task: Task, getProviderIcon: any, getPriorityColor: any, isDone?: boolean, onComplete?: () => void }) {
     return (
         <div className="group flex items-start gap-3 py-2 px-2 -mx-2 rounded-lg hover:bg-muted/40 transition-colors cursor-pointer">
             {/* Checkbox Area */}
             <div className="mt-1 flex-shrink-0">
-                <button className={cn(
-                    "h-5 w-5 rounded-full border border-muted-foreground/40 flex items-center justify-center transition-all hover:border-foreground",
-                    isDone && "bg-muted-foreground/20 border-transparent text-muted-foreground",
-                    !isDone && "hover:bg-primary/10 hover:border-primary"
-                )}>
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        if (!isDone && onComplete) onComplete()
+                    }}
+                    className={cn(
+                        "h-5 w-5 rounded-full border border-muted-foreground/40 flex items-center justify-center transition-all hover:border-foreground",
+                        isDone && "bg-muted-foreground/20 border-transparent text-muted-foreground",
+                        !isDone && "hover:bg-primary/10 hover:border-primary"
+                    )}>
                     {isDone && <CheckCircle2 className="h-3.5 w-3.5" />}
                 </button>
             </div>
@@ -209,23 +228,26 @@ function TaskRow({ task, getProviderIcon, getPriorityColor, isDone = false }: { 
                 </div>
 
                 <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                    {/* Provider & ID */}
+                    {/* Provider & Project */}
                     <div className="flex items-center gap-1 opacity-70 hover:opacity-100 transition-opacity">
                         <span>{getProviderIcon(task.provider)}</span>
-                        <span className="font-mono">{task.id}</span>
+                        {task.projectName && <span className="font-medium text-foreground/80">{task.projectName}</span>}
                     </div>
 
-                    {/* Date (Mock) */}
-                    <div className="flex items-center gap-1 text-green-600">
-                        <Calendar className="h-3 w-3" />
-                        <span>Today</span>
-                    </div>
+                    {/* Date */}
+                    {task.dueDate && (
+                        <div className={cn("flex items-center gap-1",
+                            new Date(task.dueDate) < new Date() ? "text-red-500 font-medium" : "text-muted-foreground"
+                        )}>
+                            <Calendar className="h-3 w-3" />
+                            <span>{new Date(task.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                        </div>
+                    )}
 
                     {/* Priority */}
                     {task.priority && (
                         <div className={cn("flex items-center gap-1", getPriorityColor(task.priority))}>
                             <Flag className="h-3 w-3" />
-                            <span className="capitalize">{task.priority}</span>
                         </div>
                     )}
                 </div>

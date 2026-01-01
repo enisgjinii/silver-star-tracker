@@ -1,117 +1,185 @@
-import { app as m, BrowserWindow as v, ipcMain as l, powerMonitor as T } from "electron";
-import { fileURLToPath as U } from "node:url";
-import c from "node:path";
-import g from "node:fs";
-import { extractIcon as N } from "get-app-icon";
-const h = c.dirname(U(import.meta.url)), w = c.join(m.getPath("userData"), "activity-data.json");
-let u = {};
-function _() {
+import { app, BrowserWindow, ipcMain, powerMonitor } from "electron";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
+import fs from "node:fs";
+import { extractIcon } from "get-app-icon";
+const __dirname$1 = path.dirname(fileURLToPath(import.meta.url));
+const dataPath = path.join(app.getPath("userData"), "activity-data.json");
+let appIcons = {};
+function loadData() {
   try {
-    if (g.existsSync(w))
-      return JSON.parse(g.readFileSync(w, "utf-8"));
-  } catch (a) {
-    console.error("Error loading data:", a);
+    if (fs.existsSync(dataPath)) {
+      return JSON.parse(fs.readFileSync(dataPath, "utf-8"));
+    }
+  } catch (e) {
+    console.error("Error loading data:", e);
   }
   return [];
 }
-function D(a) {
+function saveData(data) {
   try {
-    g.writeFileSync(w, JSON.stringify(a, null, 2));
-  } catch (t) {
-    console.error("Error saving data:", t);
+    fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
+  } catch (e) {
+    console.error("Error saving data:", e);
   }
 }
-function E() {
+function getTodayStr() {
   return (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
 }
-process.env.DIST = c.join(h, "../dist");
-process.env.VITE_PUBLIC = m.isPackaged ? process.env.DIST : c.join(h, "../public");
-let s, o = null, r = [], y = !0;
-function I() {
-  const a = process.env.VITE_PUBLIC || c.join(h, "../public"), t = process.env.DIST || c.join(h, "../dist");
-  s = new v({
+process.env.DIST = path.join(__dirname$1, "../dist");
+process.env.VITE_PUBLIC = app.isPackaged ? process.env.DIST : path.join(__dirname$1, "../public");
+let win;
+let currentActivity = null;
+let allData = [];
+let isTracking = true;
+function createWindow() {
+  const publicDir = process.env.VITE_PUBLIC || path.join(__dirname$1, "../public");
+  const distDir = process.env.DIST || path.join(__dirname$1, "../dist");
+  win = new BrowserWindow({
     width: 1400,
     height: 900,
     minWidth: 1e3,
     minHeight: 600,
-    icon: c.join(a, "icon.png"),
+    icon: path.join(publicDir, "icon.png"),
     titleBarStyle: "hiddenInset",
-    show: !1,
+    show: false,
     webPreferences: {
-      preload: c.join(h, "preload.js")
+      preload: path.join(__dirname$1, "preload.js")
     }
-  }), s.once("ready-to-show", () => {
-    s?.maximize(), s?.show();
-  }), process.env.VITE_DEV_SERVER_URL ? s.loadURL(process.env.VITE_DEV_SERVER_URL) : s.loadFile(c.join(t, "index.html"));
+  });
+  win.once("ready-to-show", () => {
+    win?.maximize();
+    win?.show();
+  });
+  if (process.env.VITE_DEV_SERVER_URL) {
+    win.loadURL(process.env.VITE_DEV_SERVER_URL);
+  } else {
+    win.loadFile(path.join(distDir, "index.html"));
+  }
 }
-function $(a, t) {
-  const n = Date.now(), p = E();
-  if (o && o.appName !== a) {
-    const e = Math.round((n - o.startTime) / 1e3);
-    if (e > 0) {
-      let i = r.find((f) => f.date === p);
-      i || (i = { date: p, entries: [], appSummary: {} }, r.push(i));
-      const d = {
-        id: `${p}-${Date.now()}`,
-        appName: o.appName,
-        title: o.title,
-        startTime: o.startTime,
-        endTime: n,
-        duration: e
+function updateActivity(appName, title) {
+  const now = Date.now();
+  const todayStr = getTodayStr();
+  if (currentActivity && currentActivity.appName !== appName) {
+    const duration = Math.round((now - currentActivity.startTime) / 1e3);
+    if (duration > 0) {
+      let todayData = allData.find((d) => d.date === todayStr);
+      if (!todayData) {
+        todayData = { date: todayStr, entries: [], appSummary: {} };
+        allData.push(todayData);
+      }
+      const entry = {
+        id: `${todayStr}-${Date.now()}`,
+        appName: currentActivity.appName,
+        title: currentActivity.title,
+        startTime: currentActivity.startTime,
+        endTime: now,
+        duration
       };
-      i.entries.push(d), i.appSummary[o.appName] = (i.appSummary[o.appName] || 0) + e, D(r);
+      todayData.entries.push(entry);
+      todayData.appSummary[currentActivity.appName] = (todayData.appSummary[currentActivity.appName] || 0) + duration;
+      saveData(allData);
     }
   }
-  (!o || o.appName !== a) && (o = { appName: a, title: t, startTime: n });
+  if (!currentActivity || currentActivity.appName !== appName) {
+    currentActivity = { appName, title, startTime: now };
+  }
 }
-m.on("window-all-closed", () => {
-  process.platform !== "darwin" && (m.quit(), s = null);
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
+    app.quit();
+    win = null;
+  }
 });
-m.on("activate", () => {
-  v.getAllWindows().length === 0 && I();
+app.on("activate", () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow();
+  }
 });
-m.whenReady().then(() => {
-  r = _(), I(), l.handle("get-activity-data", () => r), l.handle("get-today-summary", () => {
-    const a = E();
-    return r.find((n) => n.date === a)?.appSummary || {};
-  }), l.handle("get-app-icons", () => u), l.handle("is-tracking", () => y), l.handle("set-tracking", (a, t) => (y = t, y)), l.handle("get-data-path", () => w), l.handle("delete-entry", (a, t) => {
-    for (const n of r) {
-      const p = n.entries.findIndex((e) => e.id === t);
-      if (p !== -1) {
-        const e = n.entries[p];
-        return n.appSummary[e.appName] -= e.duration, n.appSummary[e.appName] <= 0 && delete n.appSummary[e.appName], n.entries.splice(p, 1), D(r), !0;
+app.whenReady().then(() => {
+  allData = loadData();
+  createWindow();
+  ipcMain.handle("get-activity-data", () => allData);
+  ipcMain.handle("get-today-summary", () => {
+    const todayStr = getTodayStr();
+    const todayData = allData.find((d) => d.date === todayStr);
+    return todayData?.appSummary || {};
+  });
+  ipcMain.handle("get-app-icons", () => {
+    return appIcons;
+  });
+  ipcMain.handle("is-tracking", () => isTracking);
+  ipcMain.handle("set-tracking", (_event, value) => {
+    isTracking = value;
+    return isTracking;
+  });
+  ipcMain.handle("get-data-path", () => dataPath);
+  ipcMain.handle("delete-entry", (_event, entryId) => {
+    for (const day of allData) {
+      const idx = day.entries.findIndex((e) => e.id === entryId);
+      if (idx !== -1) {
+        const entry = day.entries[idx];
+        day.appSummary[entry.appName] -= entry.duration;
+        if (day.appSummary[entry.appName] <= 0) {
+          delete day.appSummary[entry.appName];
+        }
+        day.entries.splice(idx, 1);
+        saveData(allData);
+        return true;
       }
     }
-    return !1;
-  }), l.handle("clear-all-data", () => (r = [], D(r), !0)), setInterval(async () => {
-    if (s && !s.isDestroyed() && y)
+    return false;
+  });
+  ipcMain.handle("clear-all-data", () => {
+    allData = [];
+    saveData(allData);
+    return true;
+  });
+  setInterval(async () => {
+    if (win && !win.isDestroyed() && isTracking) {
       try {
-        const t = await (await import("active-win")).default(), n = T.getSystemIdleTime();
-        if (t && n < 60) {
-          const e = (t.owner?.name || "Unknown").trim(), i = t.owner?.path;
-          if (console.log(`[DEBUG] Active App: ${e}, Path: ${i}`), $(e, t.title || ""), !u[e] && i)
+        const activeWin = await import("active-win");
+        const result = await activeWin.default();
+        const idleTime = powerMonitor.getSystemIdleTime();
+        if (result && idleTime < 60) {
+          const rawAppName = result.owner?.name || "Unknown";
+          const appName = rawAppName.trim();
+          const appPath = result.owner?.path;
+          console.log(`[DEBUG] Active App: ${appName}, Path: ${appPath}`);
+          updateActivity(appName, result.title || "");
+          if (!appIcons[appName] && appPath) {
             try {
-              let d = i;
-              if (process.platform === "darwin" && !i.endsWith(".app")) {
-                const S = i.indexOf(".app/");
-                S !== -1 && (d = i.substring(0, S + 4));
+              let iconPath = appPath;
+              if (process.platform === "darwin" && !appPath.endsWith(".app")) {
+                const appIndex = appPath.indexOf(".app/");
+                if (appIndex !== -1) {
+                  iconPath = appPath.substring(0, appIndex + 4);
+                }
               }
-              console.log(`[DEBUG] Fetching icon for ${e} at ${d} (orig: ${i})`);
-              const f = await N(d);
-              f && f !== "data:image/png;base64," ? (u[e] = f, console.log(`[DEBUG] Successfully fetched icon for ${e}`)) : console.log(`[DEBUG] Icon fetched but empty for ${e}`);
-            } catch (d) {
-              console.error(`[DEBUG] Error fetching icon for ${e}:`, d);
+              console.log(`[DEBUG] Fetching icon for ${appName} at ${iconPath} (orig: ${appPath})`);
+              const iconDataUrl = await extractIcon(iconPath);
+              if (iconDataUrl && iconDataUrl !== "data:image/png;base64,") {
+                appIcons[appName] = iconDataUrl;
+                console.log(`[DEBUG] Successfully fetched icon for ${appName}`);
+              } else {
+                console.log(`[DEBUG] Icon fetched but empty for ${appName}`);
+              }
+            } catch (e) {
+              console.error(`[DEBUG] Error fetching icon for ${appName}:`, e);
             }
-          else u[e] && console.log(`[DEBUG] Icon already cached for ${e}`);
-          s.webContents.send("active-window", {
-            appName: e,
-            title: t.title || "",
-            idleTime: n,
+          } else if (appIcons[appName]) {
+            console.log(`[DEBUG] Icon already cached for ${appName}`);
+          }
+          win.webContents.send("active-window", {
+            appName,
+            title: result.title || "",
+            idleTime,
             timestamp: Date.now(),
-            icon: u[e]
+            icon: appIcons[appName]
           });
         }
-      } catch {
+      } catch (e) {
       }
+    }
   }, 1e3);
 });

@@ -1,5 +1,4 @@
 
-
 export interface Task {
     id: string
     title: string
@@ -9,6 +8,7 @@ export interface Task {
     priority?: 'low' | 'medium' | 'high'
     assignee?: string
     dueDate?: string
+    projectName?: string
 }
 
 export interface TaskProvider {
@@ -19,71 +19,32 @@ export interface TaskProvider {
     connect: (token: string) => Promise<boolean>
     disconnect: () => void
     getTasks: () => Promise<Task[]>
-}
-
-const MOCK_TASKS: Record<string, Task[]> = {
-    jira: [
-        { id: 'JIRA-101', title: 'Implement Auth Flow', status: 'in-progress', provider: 'jira', priority: 'high', assignee: 'Enis', url: '#' },
-        { id: 'JIRA-102', title: 'Update dependency tree', status: 'todo', provider: 'jira', priority: 'medium', assignee: 'Enis', url: '#' }
-    ],
-    trello: [
-        { id: 'TR-55', title: 'Design Landing Page', status: 'done', provider: 'trello', priority: 'medium', url: '#' },
-        { id: 'TR-56', title: 'User Interviews', status: 'todo', provider: 'trello', priority: 'low', url: '#' }
-    ],
-    github: [
-        { id: 'GH-890', title: 'Fix overflow in sidebar', status: 'in-progress', provider: 'github', priority: 'high', url: '#' },
-        { id: 'GH-891', title: 'Refactor value calculation', status: 'todo', provider: 'github', priority: 'medium', url: '#' }
-    ],
-    asana: [
-        { id: 'AS-12', title: 'Q1 Marketing Plan', status: 'todo', provider: 'asana', priority: 'high', url: '#' }
-    ],
-    todoist: [
-        { id: 'TD-1', title: 'Buy groceries', status: 'todo', provider: 'todoist', priority: 'medium', url: '#' },
-        { id: 'TD-2', title: 'Schedule dentist appt', status: 'done', provider: 'todoist', priority: 'low', url: '#' },
-        { id: 'TD-3', title: 'Finish Silver Star Project', status: 'in-progress', provider: 'todoist', priority: 'high', url: '#' }
-    ]
+    completeTask?: (taskId: string) => Promise<boolean>
 }
 
 export class SimulationTaskAdapter implements TaskProvider {
     id: 'jira' | 'trello' | 'asana' | 'github' | 'todoist'
     name: string
-    icon: string; // We'll handle icons safely in UI
+    icon: string;
     isConnected: boolean = false
 
     constructor(id: 'jira' | 'trello' | 'asana' | 'github' | 'todoist', name: string) {
         this.id = id
         this.name = name
         this.icon = ''
-
-        // Load connection state from local storage
-        this.isConnected = localStorage.getItem(`integration_${id}`) === 'true'
+        this.isConnected = false
     }
 
-    async connect(token: string): Promise<boolean> {
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000))
-
-        // Simulating success if token is provided (even dummy)
-        if (token) {
-            this.isConnected = true
-            localStorage.setItem(`integration_${this.id}`, 'true')
-            return true
-        }
+    async connect(_token: string): Promise<boolean> {
         return false
     }
 
     disconnect() {
         this.isConnected = false
-        localStorage.removeItem(`integration_${this.id}`)
     }
 
     async getTasks(): Promise<Task[]> {
-        if (!this.isConnected) return []
-
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 800))
-
-        return MOCK_TASKS[this.id] || []
+        return []
     }
 }
 
@@ -93,6 +54,7 @@ export class TodoistAdapter implements TaskProvider {
     icon: string = ''
     isConnected: boolean = false
     private token: string | null = null
+    private projects: Record<string, string> = {}
 
     constructor() {
         const savedToken = localStorage.getItem('integration_todoist_token')
@@ -130,6 +92,11 @@ export class TodoistAdapter implements TaskProvider {
         if (!this.token) return []
 
         try {
+            // Fetch projects first for mapping
+            if (Object.keys(this.projects).length === 0) {
+                await this.fetchProjects()
+            }
+
             const response = await fetch('https://api.todoist.com/rest/v2/tasks', {
                 headers: { 'Authorization': `Bearer ${this.token}` }
             })
@@ -141,11 +108,12 @@ export class TodoistAdapter implements TaskProvider {
             return data.map((t: any) => ({
                 id: t.id,
                 title: t.content,
-                status: 'todo', // Todoist tasks returned are usually 'active' (todo)
+                status: 'todo',
                 provider: 'todoist',
                 priority: this.mapPriority(t.priority),
                 url: t.url,
-                dueDate: t.due?.date
+                dueDate: t.due ? t.due.date : undefined,
+                projectName: this.projects[t.project_id] || 'Inbox'
             }))
         } catch (error) {
             console.error('Error fetching Todoist tasks:', error)
@@ -153,8 +121,36 @@ export class TodoistAdapter implements TaskProvider {
         }
     }
 
+    async completeTask(taskId: string): Promise<boolean> {
+        if (!this.token) return false
+        try {
+            const response = await fetch(`https://api.todoist.com/rest/v2/tasks/${taskId}/close`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${this.token}` }
+            })
+            return response.ok
+        } catch (error) {
+            console.error('Error completing task:', error)
+            return false
+        }
+    }
+
+    private async fetchProjects() {
+        if (!this.token) return
+        try {
+            const response = await fetch('https://api.todoist.com/rest/v2/projects', {
+                headers: { 'Authorization': `Bearer ${this.token}` }
+            })
+            if (response.ok) {
+                const data = await response.json()
+                data.forEach((p: any) => {
+                    this.projects[p.id] = p.name
+                })
+            }
+        } catch (e) { console.error(e) }
+    }
+
     private mapPriority(p: number): 'low' | 'medium' | 'high' {
-        // Todoist priorities are reverse: 4 is highest, 1 is lowest
         if (p === 4) return 'high'
         if (p === 3) return 'medium'
         return 'low'
@@ -162,9 +158,6 @@ export class TodoistAdapter implements TaskProvider {
 }
 
 export const integrations = [
-    new SimulationTaskAdapter('jira', 'Jira'),
-    new SimulationTaskAdapter('trello', 'Trello'),
-    new SimulationTaskAdapter('github', 'GitHub'),
-    new SimulationTaskAdapter('asana', 'Asana'),
+    // Mocks removed. Only real integrations are enabled.
     new TodoistAdapter()
 ]
