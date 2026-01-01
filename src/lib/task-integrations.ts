@@ -87,10 +87,84 @@ export class SimulationTaskAdapter implements TaskProvider {
     }
 }
 
+export class TodoistAdapter implements TaskProvider {
+    id: 'jira' | 'trello' | 'asana' | 'github' | 'todoist' = 'todoist'
+    name: string = 'Todoist'
+    icon: string = ''
+    isConnected: boolean = false
+    private token: string | null = null
+
+    constructor() {
+        const savedToken = localStorage.getItem('integration_todoist_token')
+        if (savedToken) {
+            this.token = savedToken
+            this.isConnected = true
+        }
+    }
+
+    async connect(token: string): Promise<boolean> {
+        try {
+            const response = await fetch('https://api.todoist.com/rest/v2/projects', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+
+            if (response.ok) {
+                this.token = token
+                this.isConnected = true
+                localStorage.setItem('integration_todoist_token', token)
+                return true
+            }
+        } catch (error) {
+            console.error('Todoist connection failed:', error)
+        }
+        return false
+    }
+
+    disconnect() {
+        this.isConnected = false
+        this.token = null
+        localStorage.removeItem('integration_todoist_token')
+    }
+
+    async getTasks(): Promise<Task[]> {
+        if (!this.token) return []
+
+        try {
+            const response = await fetch('https://api.todoist.com/rest/v2/tasks', {
+                headers: { 'Authorization': `Bearer ${this.token}` }
+            })
+
+            if (!response.ok) throw new Error('Failed to fetch tasks')
+
+            const data = await response.json()
+
+            return data.map((t: any) => ({
+                id: t.id,
+                title: t.content,
+                status: 'todo', // Todoist tasks returned are usually 'active' (todo)
+                provider: 'todoist',
+                priority: this.mapPriority(t.priority),
+                url: t.url,
+                dueDate: t.due?.date
+            }))
+        } catch (error) {
+            console.error('Error fetching Todoist tasks:', error)
+            return []
+        }
+    }
+
+    private mapPriority(p: number): 'low' | 'medium' | 'high' {
+        // Todoist priorities are reverse: 4 is highest, 1 is lowest
+        if (p === 4) return 'high'
+        if (p === 3) return 'medium'
+        return 'low'
+    }
+}
+
 export const integrations = [
     new SimulationTaskAdapter('jira', 'Jira'),
     new SimulationTaskAdapter('trello', 'Trello'),
     new SimulationTaskAdapter('github', 'GitHub'),
     new SimulationTaskAdapter('asana', 'Asana'),
-    new SimulationTaskAdapter('todoist', 'Todoist')
+    new TodoistAdapter()
 ]
