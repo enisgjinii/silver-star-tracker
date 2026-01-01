@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, Timer, BarChart2, CalendarDays, Database, Sparkles, Sun, Moon, Play, Pause, ChevronLeft, ChevronRight } from "lucide-react"
+import { LayoutDashboard, Timer, BarChart2, CalendarDays, Database, Sparkles, Sun, Moon, Play, Pause, ChevronLeft, ChevronRight, CheckCircle2, Link } from "lucide-react"
 import { useTheme } from "@/hooks/use-theme"
 import { useState, useEffect } from "react"
 
@@ -33,8 +33,10 @@ export function Layout({ children, currentView, onViewChange }: LayoutProps) {
     ]
 
     const premiumItems = [
+        { id: 'tasks', icon: CheckCircle2, label: 'Tasks' },
         { id: 'achievements', icon: Sparkles, label: 'Achievements' },
         { id: 'coach', icon: LayoutDashboard, label: 'AI Coach' },
+        { id: 'integrations', icon: Link, label: 'Integrations' },
     ]
 
 

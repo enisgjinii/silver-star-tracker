@@ -8,6 +8,8 @@ import { DataManager } from "@/components/DataManager"
 import { Gamification } from "@/components/Gamification"
 import { PrivacySettings } from "@/components/PrivacySettings"
 import { AICoach } from "@/components/AICoach"
+import { IntegrationsManager } from "@/components/IntegrationsManager"
+import { TaskManager } from "@/components/TaskManager"
 import './App.css'
 
 function App() {
@@ -25,7 +27,12 @@ function App() {
         return <Stats />
       case 'data':
         return <DataManager />
+      case 'tasks':
+        return <TaskManager />
+      case 'integrations':
+        return <IntegrationsManager />
       case 'achievements':
+        return <Gamification />
         return <Gamification />
       case 'privacy':
         return <PrivacySettings />
