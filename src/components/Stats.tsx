@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button"
 import { AppIcon } from "./ui/AppIcon"
 import { cn } from "@/lib/utils"
 import { jsPDF } from "jspdf"
+import { AnalyticsEngine } from "@/lib/analytics-engine"
 
 type TimeRange = '7d' | '30d' | 'all'
 
@@ -140,6 +141,12 @@ export function Stats() {
             currentStreak,
             maxStreak,
             sortedApps,
+            dayStats: AnalyticsEngine.processDayData([
+                ...Object.entries(current.aggregated).map(([app, sec]) => ({ appName: app, duration: sec }))
+            ]),
+            heatmap: AnalyticsEngine.generateHeatmapData(
+                data.reduce((acc, day) => ({ ...acc, [day.date]: day.entries || [] }), {})
+            ),
             categories: Object.entries(current.categories).map(([key, val]) => ({
                 name: CATEGORIES[key].label,
                 value: val,
@@ -296,11 +303,13 @@ export function Stats() {
                     <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                         <Target className="h-12 w-12" />
                     </div>
-                    <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Focus Score</div>
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Productivity Score</div>
                     <div className="text-2xl font-bold">
-                        {Math.round((analytics.current.totalSeconds / (analytics.current.dayCount * 8 * 3600)) * 100)}%
+                        {analytics.dayStats.productivityScore}/100
                     </div>
-                    <div className="text-[10px] mt-1 text-muted-foreground">Of 8h workday goal</div>
+                    <div className="text-[10px] mt-1 text-muted-foreground">
+                        {analytics.dayStats.productiveSeconds > 0 ? formatDuration(analytics.dayStats.productiveSeconds) : '0m'} of focus
+                    </div>
                 </div>
             </div>
 
